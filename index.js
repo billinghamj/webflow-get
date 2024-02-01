@@ -72,26 +72,24 @@ async function processSite(config) {
         return
     }
 
-    console.log('Fetching sitemap')
-
-    const sitemap = await fetchSitemap(site)
-    if (!sitemap) {
-      console.log('No sitemap.xml, skipping fetching pages')
-      return
-    }
-
-    const pages = getPages(site, sitemap)
-      .filter(page => config.pages.valid(`/${page}`))
-
-    console.log(`Found ${pages.length} pages`)
-
     // const cssUrl = getCSSURL(index)
     // let css = await retry(() => fetchCSS(cssUrl, timestamp), RETRY_COUNT)
     // css = formatCSS(css)
     // await writePublicFile('style.css', css)
 
     if (config.pages) {
-        console.log('Fetching pages')
+        console.log('Fetching sitemap')
+
+        const sitemap = await fetchSitemap(site)
+        if (!sitemap) {
+            console.log('No sitemap.xml, skipping fetching pages')
+            return
+        }
+
+        const pages = getPages(site, sitemap)
+            .filter(page => config.pages.valid(`/${page}`))
+
+        console.log(`Found ${pages.length} pages, fetching`)
 
         if (config.pages.valid('/index')) {
             index = formatHTML(index)
@@ -205,10 +203,10 @@ async function fetchSitemap(site) {
 }
 
 function getPages(site, sitemap) {
-    let pages = [...sitemap.matchAll(/<loc>(.*)<\/loc>/g)]
+    let pages = [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)]
 
     pages = pages.map(m => m[1])
-        .map(url => url.substring(site.length).replace(/^\/|\/$/g, ''))
+        .map(url => url.trim().substring(site.length).replace(/^\/|\/$/g, ''))
         .filter(page => page)
 
     return pages
