@@ -72,6 +72,19 @@ async function processSite(config) {
         return
     }
 
+    console.log('Fetching sitemap')
+
+    const sitemap = await fetchSitemap(site)
+    if (!sitemap) {
+      console.log('No sitemap.xml, skipping fetching pages')
+      return
+    }
+
+    const pages = getPages(site, sitemap)
+      .filter(page => config.pages.valid(`/${page}`))
+
+    console.log(`Found ${pages.length} pages`)
+
     // const cssUrl = getCSSURL(index)
     // let css = await retry(() => fetchCSS(cssUrl, timestamp), RETRY_COUNT)
     // css = formatCSS(css)
@@ -85,7 +98,7 @@ async function processSite(config) {
             await writePublicFile('index.html', index)
         }
 
-        await getFoundPages(site, index, timestamp)
+        await runInitialPages(site, pages, timestamp)
     }
 
     writeFile('.timestamp', timestamp)
@@ -103,6 +116,19 @@ async function getPage(site, page, timestamp) {
     } catch (error) {
         console.error(`${error.message}: ${page}`)
     }
+}
+
+async function runInitialPages(site, pages, timestamp) {
+    const newURLs = pages.filter((url) => {
+        if (visitedPages.has(url)) {
+            return false
+        }
+
+        visitedPages.add(url)
+        return true
+    })
+
+    return await Promise.all(newURLs.map(page => getPage(site, page, timestamp)))
 }
 
 async function getFoundPages(site, html, timestamp) {
@@ -282,7 +308,7 @@ async function assurePathExists(path) {
                     await fs.mkdir(`${process.env.GITHUB_WORKSPACE}${current}`)
                     alreadyCreatedPaths.add(current)
 //                } catch (error) {
-//                    
+//
 //                }
             }
         }
