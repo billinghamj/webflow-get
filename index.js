@@ -204,7 +204,7 @@ async function fetchSitemap(site) {
     return sitemap
 }
 
-function getPages(site) {
+function getPages(site, sitemap) {
     let pages = [...sitemap.matchAll(/<loc>(.*)<\/loc>/g)]
 
     pages = pages.map(m => m[1])
